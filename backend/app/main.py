@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.database import get_database_connection
 from app.routers.auth_router import router as auth_router
+from app.routers.project_router import router as project_router
 
 app = FastAPI()
 
@@ -17,6 +18,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(project_router)
 
 
 @app.get("/api/health")
