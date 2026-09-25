@@ -1,5 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import {
+  Alert,
   Box,
   Button,
   Container,
@@ -7,6 +10,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+
 import { useDispatch } from "react-redux";
 
 import authAPI from "../../api/authAPI";
@@ -17,12 +21,27 @@ import {
 
 function Login() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [messageSeverity, setMessageSeverity] = useState("error");
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    setMessage("");
+
+    if (!email.trim() || !password.trim()) {
+      setMessageSeverity("error");
+      setMessage("Please enter your email and password.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const response = await authAPI.login({
@@ -32,20 +51,51 @@ function Login() {
 
       const token = response.access_token;
 
-dispatch(setToken(token));
+      if (!token) {
+        throw new Error("No access token received.");
+      }
 
-localStorage.setItem("access_token", token);
+      // Store token first so the /auth/me request
+      // can automatically receive the Authorization header.
+      localStorage.setItem("access_token", token);
 
-const user = await authAPI.getMe();
+      dispatch(setToken(token));
 
-dispatch(setUser(user));
+      // Get the currently authenticated user.
+      const user = await authAPI.getMe();
 
-console.log("Current user:", user);
+      dispatch(setUser(user));
 
-console.log("Login successful:", response);
-console.log("Token stored successfully");
+      console.log("Current user:", user);
+
+      setMessageSeverity("success");
+      setMessage("Login successful! Redirecting...");
+
+      // Give the user a moment to see the success message.
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 700);
     } catch (error) {
       console.error("Login failed:", error);
+
+      // Remove the token if authentication did not complete.
+      localStorage.removeItem("access_token");
+
+      setMessageSeverity("error");
+
+      if (error.response?.status === 401) {
+        setMessage("Invalid email or password.");
+      } else if (error.response?.data?.detail) {
+        setMessage(error.response.data.detail);
+      } else if (error.message === "No access token received.") {
+        setMessage("Login failed. No access token was received.");
+      } else {
+        setMessage(
+          "Unable to connect to the server. Please try again."
+        );
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -57,25 +107,56 @@ console.log("Token stored successfully");
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          py: 3,
         }}
       >
-        <Paper elevation={3} sx={{ width: "100%", padding: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
+        <Paper
+          elevation={3}
+          sx={{
+            width: "100%",
+            p: { xs: 3, sm: 4 },
+          }}
+        >
+          <Typography
+            variant="h4"
+            component="h1"
+            gutterBottom
+          >
             Welcome Back
           </Typography>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mb: 3 }}
+          >
             Login to continue to your projects.
           </Typography>
 
-          <Box component="form" onSubmit={handleSubmit}>
+          {message && (
+            <Alert
+              severity={messageSeverity}
+              sx={{ mb: 2 }}
+            >
+              {message}
+            </Alert>
+          )}
+
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+          >
             <TextField
               label="Email"
               type="email"
               fullWidth
               margin="normal"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) =>
+                setEmail(event.target.value)
+              }
+              disabled={loading}
+              autoComplete="email"
             />
 
             <TextField
@@ -84,16 +165,21 @@ console.log("Token stored successfully");
               fullWidth
               margin="normal"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) =>
+                setPassword(event.target.value)
+              }
+              disabled={loading}
+              autoComplete="current-password"
             />
 
             <Button
               type="submit"
               variant="contained"
               fullWidth
+              disabled={loading}
               sx={{ mt: 3 }}
             >
-              Login
+              {loading ? "Logging in..." : "Login"}
             </Button>
           </Box>
         </Paper>

@@ -95,3 +95,43 @@ def get_user_by_id(user_id: int):
 
     finally:
         connection.close()
+
+def get_users(search: str | None = None):
+    connection = get_database_connection()
+
+    try:
+        with connection.cursor() as cursor:
+            if search:
+                cursor.execute(
+                    """
+                    SELECT id, name, email, role
+                    FROM users
+                    WHERE name ILIKE %s
+                       OR email ILIKE %s
+                    ORDER BY name
+                    """,
+                    (f"%{search}%", f"%{search}%"),
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT id, name, email, role
+                    FROM users
+                    ORDER BY name
+                    """
+                )
+
+            rows = cursor.fetchall()
+
+            return [
+                {
+                    "id": row[0],
+                    "name": row[1],
+                    "email": row[2],
+                    "role": row[3],
+                }
+                for row in rows
+            ]
+
+    finally:
+        connection.close()
