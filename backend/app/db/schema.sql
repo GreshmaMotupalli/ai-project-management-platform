@@ -207,3 +207,43 @@ CREATE TABLE IF NOT EXISTS activities (
         REFERENCES users(id)
         ON DELETE RESTRICT
 );
+
+-- ============================================
+-- AI Project Assistant
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS ai_conversations (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL DEFAULT 'New Chat',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT ai_conversations_project_fk
+        FOREIGN KEY (project_id)
+        REFERENCES projects(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT ai_conversations_user_fk
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+
+CREATE TABLE IF NOT EXISTS ai_messages (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    conversation_id BIGINT NOT NULL,
+    role VARCHAR(20) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT ai_messages_conversation_fk
+        FOREIGN KEY (conversation_id)
+        REFERENCES ai_conversations(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT ai_messages_role_check
+        CHECK (role IN ('user', 'assistant'))
+);

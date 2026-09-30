@@ -20,6 +20,8 @@ import Sprints from "./pages/sprints/Sprints";
 import Activity from "./pages/activity/Activity";
 import TaskBreakdown from "./pages/AI/TaskBreakdown";
 import ProjectSummary from "./pages/AI/ProjectSummary";
+import ProjectRisks from "./pages/AI/ProjectRisks";
+import ProjectAssistant from "./pages/AI/ProjectAssistant";
 
 import authAPI from "./api/authAPI";
 import {
@@ -118,6 +120,25 @@ function App() {
   element={<ProjectSummary />}
 />
 
+<Route
+  path="/projects/:projectId/ai/task-breakdown"
+  element={<TaskBreakdown />}
+/>
+
+<Route
+  path="/projects/:projectId/ai/summary"
+  element={<ProjectSummary />}
+/>
+
+<Route
+  path="/projects/:projectId/ai/risks"
+  element={<ProjectRisks />}
+/> 
+
+<Route
+  path="/projects/:projectId/ai/assistant"
+  element={<ProjectAssistant />}
+/>
         <Route
           path="/"
           element={<Navigate to="/login" replace />}
